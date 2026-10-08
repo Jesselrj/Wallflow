@@ -16,7 +16,7 @@ struct WallflowApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("Wallflow", systemImage: "photo.artframe") {
+        MenuBarExtra("Wallflow", systemImage: "play.rectangle.fill") {
             LibraryView()
         }
         .menuBarExtraStyle(.window)
