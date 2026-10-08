@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Jesselrj/Wallflow?color=blue)](https://github.com/Jesselrj/Wallflow/releases)
 
-仿 Wallpaper Engine 的 macOS 动态壁纸应用。原生 Swift/AppKit + SwiftUI，菜单栏程序，支持视频、GIF、图片和网页（HTML）四种动态壁纸，支持多显示器独立设置壁纸。
+macOS 动态壁纸应用。原生 Swift/AppKit + SwiftUI，菜单栏程序，支持视频、GIF、图片和网页（HTML）四种动态壁纸，支持多显示器独立设置壁纸。
 
 <p align="center">
   <img src="docs/panel.png" width="366" alt="Wallflow 菜单栏面板：壁纸列表、屏幕选择与控制项">
