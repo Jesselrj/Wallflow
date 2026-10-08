@@ -8,11 +8,10 @@
 仿 Wallpaper Engine 的 macOS 动态壁纸应用。原生 Swift/AppKit + SwiftUI，菜单栏程序，支持视频、GIF、图片和网页（HTML）四种动态壁纸，支持多显示器独立设置壁纸。
 
 <p align="center">
-  <img src="docs/aurora.jpg" width="49%" alt="aurora：纯 CSS 动画网页壁纸">
-  <img src="docs/matrix.jpg" width="49%" alt="matrix：Canvas 数字雨网页壁纸">
+  <img src="docs/panel.png" width="366" alt="Wallflow 菜单栏面板：壁纸列表、屏幕选择与控制项">
 </p>
 
-上图为内置示例壁纸 **aurora**（纯 CSS 渐变极光 + 星空）与 **matrix**（Canvas 数字雨），均为实际运行截屏。
+菜单栏点开即用：选壁纸、切屏幕、调填充/静音/暂停，所有操作都在这一个面板里。
 
 ## 功能
 
