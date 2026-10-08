@@ -1,6 +1,18 @@
 # Wallflow
 
+[![Swift](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)](https://www.swift.org)
+[![Platform](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white)](https://www.apple.com/macos/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/Jesselrj/Wallflow?color=blue)](https://github.com/Jesselrj/Wallflow/releases)
+
 仿 Wallpaper Engine 的 macOS 动态壁纸应用。原生 Swift/AppKit + SwiftUI，菜单栏程序，支持视频、GIF、图片和网页（HTML）四种动态壁纸，支持多显示器独立设置壁纸。
+
+<p align="center">
+  <img src="docs/aurora.jpg" width="49%" alt="aurora：纯 CSS 动画网页壁纸">
+  <img src="docs/matrix.jpg" width="49%" alt="matrix：Canvas 数字雨网页壁纸">
+</p>
+
+上图为内置示例壁纸 **aurora**（纯 CSS 渐变极光 + 星空）与 **matrix**（Canvas 数字雨），均为实际运行截屏。
 
 ## 功能
 
