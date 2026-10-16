@@ -1,7 +1,15 @@
 import Foundation
 
 final class LibraryStore: ObservableObject {
-    static let shared = LibraryStore()
+    static let shared: LibraryStore = {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser
+        return LibraryStore(
+            directory: appSupport.appendingPathComponent("Wallflow", isDirectory: true),
+            applyChanges: { WallpaperManager.shared.applyAll() },
+            wallpaperChanged: { WallpaperManager.shared.wallpaperDidChange($0, previous: $1) }
+        )
+    }()
 
     private struct PersistedLibrary: Codable {
         var wallpapers: [Wallpaper]
@@ -15,23 +23,25 @@ final class LibraryStore: ObservableObject {
 
     private let libraryFileURL: URL
     private let samplesDirectory: URL
+    private let applyChanges: () -> Void
+    private let wallpaperChanged: (Wallpaper, Wallpaper) -> Void
 
     var selectedWallpaper: Wallpaper? {
         wallpapers.first { $0.id == selectedID }
     }
 
-    private init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? FileManager.default.homeDirectoryForCurrentUser
-        let root = appSupport.appendingPathComponent("Wallflow", isDirectory: true)
-        try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        libraryFileURL = root.appendingPathComponent("library.json")
-        samplesDirectory = root.appendingPathComponent("Samples", isDirectory: true)
+    init(directory: URL, applyChanges: @escaping () -> Void = {},
+         wallpaperChanged: @escaping (Wallpaper, Wallpaper) -> Void = { _, _ in }) {
+        self.applyChanges = applyChanges
+        self.wallpaperChanged = wallpaperChanged
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        libraryFileURL = directory.appendingPathComponent("library.json")
+        samplesDirectory = directory.appendingPathComponent("Samples", isDirectory: true)
 
         load()
         // applyAll 会回调 LibraryStore.shared，init 期间同步调用会重入死锁，故推迟到 runloop
         DispatchQueue.main.async {
-            WallpaperManager.shared.applyAll()
+            applyChanges()
         }
     }
 
@@ -41,24 +51,34 @@ final class LibraryStore: ObservableObject {
     }
 
     func select(_ id: UUID?) {
-        guard id != selectedID else { return }
+        guard id == nil || wallpapers.contains(where: { $0.id == id }) else { return }
+        guard id != selectedID || !assignments.isEmpty else { return }
         selectedID = id
         assignments.removeAll()
         persist()
-        WallpaperManager.shared.applyAll()
+        applyChanges()
     }
 
     func assign(_ id: UUID, to screenID: String) {
+        guard wallpapers.contains(where: { $0.id == id }) else { return }
         guard assignments[screenID] != id else { return }
         assignments[screenID] = id
         persist()
-        WallpaperManager.shared.applyAll()
+        applyChanges()
     }
 
     func add(urls: [URL]) {
         var added: [Wallpaper] = []
+        var knownPaths = Set(wallpapers.map { $0.url.standardizedFileURL.resolvingSymlinksInPath().path })
         for url in urls {
+            guard url.isFileURL else { continue }
             guard let kind = Wallpaper.kind(forPathExtension: url.pathExtension) else { continue }
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                  !isDirectory.boolValue, FileManager.default.isReadableFile(atPath: url.path)
+            else { continue }
+            let canonicalPath = url.standardizedFileURL.resolvingSymlinksInPath().path
+            guard knownPaths.insert(canonicalPath).inserted else { continue }
             let name = url.deletingPathExtension().lastPathComponent
             added.append(Wallpaper(name: name, path: url.path, kind: kind))
         }
@@ -76,7 +96,7 @@ final class LibraryStore: ObservableObject {
         let previous = wallpapers[index]
         wallpapers[index] = wallpaper
         persist()
-        WallpaperManager.shared.wallpaperDidChange(wallpaper, previous: previous)
+        wallpaperChanged(wallpaper, previous)
     }
 
     func remove(ids: Set<UUID>) {
@@ -88,7 +108,7 @@ final class LibraryStore: ObservableObject {
             assignments[screenID] = nil
         }
         persist()
-        WallpaperManager.shared.applyAll()
+        applyChanges()
     }
 
     private func load() {
@@ -100,11 +120,13 @@ final class LibraryStore: ObservableObject {
             return
         }
         wallpapers = library.wallpapers
-        selectedID = library.selectedID
-        assignments = library.assignments ?? [:]
-        if wallpapers.isEmpty {
-            importSamples()
+        let validIDs = Set(wallpapers.map(\.id))
+        if let id = library.selectedID {
+            selectedID = validIDs.contains(id) ? id : wallpapers.first?.id
+        } else {
+            selectedID = nil
         }
+        assignments = (library.assignments ?? [:]).filter { validIDs.contains($0.value) }
     }
 
     private func persist() {

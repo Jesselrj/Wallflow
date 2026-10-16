@@ -4,8 +4,13 @@ final class WallpaperManager: ObservableObject {
     static let shared = WallpaperManager()
 
     @Published var isPaused = false {
-        didSet { syncPlaybackState() }
+        didSet {
+            playbackState.userPaused = isPaused
+            syncPlaybackState()
+        }
     }
+
+    private var playbackState = PlaybackState()
 
     private struct ScreenEntry {
         let panel: WallpaperPanel
@@ -27,10 +32,19 @@ final class WallpaperManager: ObservableObject {
 
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         workspaceCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.playbackState.systemSleeping = true
+            self?.syncPlaybackState()
+        }
+        workspaceCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            self?.playbackState.systemSleeping = false
             self?.syncPlaybackState()
         }
         workspaceCenter.addObserver(
@@ -38,13 +52,15 @@ final class WallpaperManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.pauseRenderers()
+            self?.playbackState.screensSleeping = true
+            self?.syncPlaybackState()
         }
         workspaceCenter.addObserver(
             forName: NSWorkspace.screensDidWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            self?.playbackState.screensSleeping = false
             self?.syncPlaybackState()
         }
     }
@@ -110,13 +126,7 @@ final class WallpaperManager: ObservableObject {
 
     private func syncPlaybackState() {
         for entry in entries.values {
-            entry.renderer.setPaused(isPaused)
-        }
-    }
-
-    private func pauseRenderers() {
-        for entry in entries.values {
-            entry.renderer.setPaused(true)
+            entry.renderer.setPaused(playbackState.isPaused)
         }
     }
 }

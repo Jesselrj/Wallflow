@@ -10,6 +10,7 @@ let package = Package(
             resources: [
                 .copy("Examples")
             ]
-        )
+        ),
+        .testTarget(name: "WallflowTests", dependencies: ["Wallflow"])
     ]
 )

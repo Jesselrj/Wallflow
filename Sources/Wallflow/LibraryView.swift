@@ -51,6 +51,11 @@ struct LibraryView: View {
     private var header: some View {
         HStack {
             Text("Wallflow").font(.headline)
+            if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+                Text("v\(version)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Spacer()
             Button {
                 showOpenPanel()

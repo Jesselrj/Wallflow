@@ -42,7 +42,8 @@ final class FrameSequenceWallpaperRenderer: WallpaperRenderer {
     private var frameDurations: [Double] = []
     private var frameIndex = 0
     private var timer: Timer?
-    private var paused = false
+    // 等待管理器首次同步播放状态，避免 false -> false 导致 GIF 不启动。
+    private var paused = true
 
     init?(wallpaper: Wallpaper) {
         contentView = ContentView()
@@ -93,19 +94,28 @@ final class FrameSequenceWallpaperRenderer: WallpaperRenderer {
     }
 
     func stop() {
+        paused = true
         timer?.invalidate()
         timer = nil
     }
 
+    deinit {
+        timer?.invalidate()
+    }
+
     private func scheduleNextFrame() {
-        guard frames.count > 1 else { return }
+        guard !paused, frames.count > 1 else { return }
         let interval = max(frameDurations[frameIndex], 0.02)
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+        let nextTimer = Timer(timeInterval: interval, repeats: false) { [weak self] _ in
             self?.advanceFrame()
         }
+        timer = nextTimer
+        // 菜单跟踪期间也播放，避免打开菜单或拖动控件时冻结。
+        RunLoop.main.add(nextTimer, forMode: .common)
     }
 
     private func advanceFrame() {
+        guard !paused else { return }
         frameIndex = (frameIndex + 1) % frames.count
         contentView.contentLayer.contents = frames[frameIndex]
         scheduleNextFrame()

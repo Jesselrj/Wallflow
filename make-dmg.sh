@@ -6,12 +6,16 @@ cd "$(dirname "$0")"
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Wallflow.app/Contents/Info.plist)
 
-rm -rf dist
-mkdir -p dist/staging
-cp -R Wallflow.app dist/staging/
-ln -s /Applications dist/staging/Applications
+mkdir -p dist
+STAGING=$(mktemp -d dist/.staging.XXXXXX)
+trap 'rm -rf "$STAGING"' EXIT
+cp -R Wallflow.app "$STAGING/"
+ln -s /Applications "$STAGING/Applications"
 
-hdiutil create -volname "Wallflow" -srcfolder dist/staging -format UDZO -ov "dist/Wallflow-$VERSION.dmg" -quiet
-rm -rf dist/staging
+hdiutil create -volname "Wallflow" -srcfolder "$STAGING" -format UDZO -ov "dist/Wallflow-$VERSION.dmg" -quiet
+(
+    cd dist
+    shasum -a 256 "Wallflow-$VERSION.dmg" > "Wallflow-$VERSION.dmg.sha256"
+)
 
 echo "已生成 dist/Wallflow-$VERSION.dmg"
